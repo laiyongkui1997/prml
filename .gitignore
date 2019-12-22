@@ -1,2 +1,8 @@
 # ignore cache files
 */__pycache__
+
+# some unfinished python file
+unfinished/
+
+# data file
+data/

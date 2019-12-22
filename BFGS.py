@@ -153,7 +153,7 @@ import matplotlib.pyplot as plt
 def draw_result(x, y):
     fig, ax = plt.subplots()
     ax.plot(x, y)
-    ax.set(xlabel='x', ylabel='y', title='test function')
+    ax.set(xlabel='iteration num', ylabel='minimum value', title='test function')
     ax.grid()
     plt.show()
 
