@@ -16,11 +16,8 @@ Principles: 1. Select one attribute value which covers the most positive example
 import os
 import math
 import random
-# import numpy as np
 from collections import Counter
 
-DATA_DIR = './data'
-DATA_FILE = 'weather'
 
 def read_data(filename):
     data = []
@@ -56,44 +53,64 @@ def flatten_arr(data):
     return flt_data
 
 
-def div_pos_neg_data(data):
+def div_pos_neg_data(data, class_name='Class'):
     pos_data, neg_data = [], []
+    idx = data['heads'].index(class_name)
+    true_attr = data['data'][0][idx]
+
+    # print('true attr:', true_attr)
+
     for attrs in data['data']:
-        if attrs[-1] == 'P':
-            del attrs[-1]
+        if attrs[idx] == true_attr:
+            del attrs[idx]
             pos_data.append(attrs)
         else:
-            del attrs[-1]
+            del attrs[idx]
             neg_data.append(attrs)
     return pos_data, neg_data
 
 
-def search_best_attr(rmv_attrs, PE, NE):
-    flt_PE = flatten_arr(PE)
-    flt_PE = [item for item in flt_PE if item not in rmv_attrs]
+def search_best_attr(rmv_heads, heads, PE, NE):
+    # get useful idxs
+    useful_idxs = []
+    for idx in range(len(heads)):
+        if heads[idx] not in rmv_heads:
+            useful_idxs.append(idx)
     # find the attrs which can cover most position examples
-    flt_PE_count = Counter(flt_PE)
+    flt_PE_count = Counter()
+    for idx in useful_idxs:
+        flt_PE_count += Counter(flatten_arr([heads[idx] + ':' + item[idx] for item in PE]))
     best_attrs = []
     max_num = 0
     for attr, num in flt_PE_count.items():
-        if num >= max_num:
+        if num > max_num:
             max_num = num
+            best_attrs = [attr]
+        elif num == max_num:
             best_attrs.append(attr)
-    
+
+    # print('best_attrs:', best_attrs)
+
     if len(best_attrs) == 1:
         return best_attrs[0]
     else:
         # find the attrs which can cover least negative examples
-        flt_NE = flatten_arr(NE)
-        flt_NE = [item for item in flt_NE if item not in rmv_attrs]
+        flt_NE = [heads[idx] + ':' + item[idx] for idx in useful_idxs for item in NE]
         select_attrs = [attr for attr in best_attrs if attr not in flt_NE]
         if not select_attrs:
-            flt_NE_count = Counter(flt_NE)
+            flt_NE_count = Counter()
+            for idx in useful_idxs:
+                flt_NE_count += Counter(flatten_arr([heads[idx] + ':' + item[idx] for item in NE]))
             min_num = math.inf
             for attr, num in list(flt_NE_count.items())[::-1]:
-                if attr in best_attrs and num <= min_num:
-                    min_num = num
-                    select_attrs.append(attr)
+                if attr in best_attrs:
+                    if num < min_num:
+                        min_num = num
+                        select_attrs = [attr]
+                    elif num == min_num:
+                        select_attrs.append(attr)
+        
+        # print('select_attrs:', select_attrs)
         
         if len(select_attrs) == 1:
             return select_attrs[0]
@@ -120,22 +137,20 @@ def remove_example(org_data, rmv_data):
     return result_data
 
 
-def GS(data):
-    heads = data['heads']
-    value2attr = data['value2attr']
-    attr2value = data['attr2value']
+def GS(data, class_name='Class'):
+    heads = data['heads'].copy()
+    heads.remove(class_name)
     F = []
-    pos_data, neg_data = div_pos_neg_data(data)
+    pos_data, neg_data = div_pos_neg_data(data, class_name)
     PE, NE = None, None
     PE, NE = pos_data, neg_data
     while PE:
         CPX = {}
         while NE:
-            rmv_attrs = [attr2value[key] for key in CPX.keys()]
-            flt_rmv_attrs = flatten_arr(rmv_attrs) if rmv_attrs else []
-            attr = search_best_attr(flt_rmv_attrs, PE, NE)
-            head = value2attr[attr]
-            CPX[head] = attr
+            rmv_heads = [key.split(':')[0] for key in CPX.keys()]
+            attr = search_best_attr(rmv_heads, heads, PE, NE)
+            head, value = attr.split(':')
+            CPX[head] = value
             PE, NE = cover_examples(CPX, heads, PE, NE)
         pos_data = remove_example(pos_data, PE)
         PE = pos_data
@@ -159,10 +174,11 @@ def print_rule(rule):
 
 
 if __name__ == '__main__':
+    DATA_DIR = './data'
+    # DATA_FILE = 'weather'
+    DATA_FILE = 'pneumonia'
     filename = os.path.join(DATA_DIR, DATA_FILE)
     data = read_data(filename)
-    print('attr2value: ', data['attr2value'])
-    print('value2attr: ', data['value2attr'])
     rule = GS(data)
     print('result rule: ', print_rule(rule))
 
