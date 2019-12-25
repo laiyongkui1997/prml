@@ -11,8 +11,8 @@ Note: simply ignore every negative example
 
 import os
 
-EMPTY = False
-ANY = True
+EMPTY = 'None'
+ANY = '?'
 
 
 def read_data(filename):
@@ -88,7 +88,7 @@ def Find_S(data, class_name='Class'):
     u_idx = 0
     for emp in pos_examples:
         for emp_attr, hps_attr in zip(emp, hps):
-            if hps_attr==EMPTY or emp_attr != hps_attr and hps_attr is not ANY:
+            if hps_attr==EMPTY or emp_attr != hps_attr and hps_attr != ANY:
                 u_idx += 1
                 hps = generalize_hypothesis(hps, emp)
                 print(' -- update {} times-- '.format(u_idx))
