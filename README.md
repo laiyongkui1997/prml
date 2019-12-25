@@ -12,4 +12,5 @@ All algrithm implemented by us using some basic package, like `numpy`, `sympy` a
 | 2  | BFGS      | 2019.12.14 | - |
 | 3  | GS      | 2019.12.22 | - |
 | 4  | AQ      | 2019.12.22 | - |
+| 5  | Find-S      | 2019.12.25 | - |
 
