@@ -17,35 +17,35 @@ PURE_NEG = 'neg'
 PURE_POS = 'pos'
 
 
-def read_data(filename):
+def read_data(filename, no_use_heads=[]):
     data = []
     attr2value = {}
-    value2attr = {}
     with open(filename, 'r') as fr:
         line = fr.readline().strip()
         heads = line.split('\t')
+        no_use_idxs = [heads.index(no_use_head) for no_use_head in no_use_heads]
+        heads = [head for head in heads if head not in no_use_heads]
         while True:
             line = fr.readline()
             if not line:
                 break
             line = line.strip()
             attrs = line.split('\t')
+            attrs = [attr for a_idx, attr in enumerate(attrs) if a_idx not in no_use_idxs]
             data.append(attrs)
             for head, attr in zip(heads, attrs):
                 if head not in attr2value:
                     attr2value[head] = set([attr])
                 else:
                     attr2value[head].add(attr)
-                if attr not in value2attr:
-                    value2attr[attr] = head
-    return {'heads': heads, 'data': data, 'attr2value': attr2value, 'value2attr': value2attr}
+    return {'heads': heads, 'data': data, 'attr2value': attr2value}
 
 
 def cal_entropy(data, class_idx, pos_class_val, check_pure=False):
     all_data_num = len(data)
-    pos_data_num = len([item for item in data if item[class_idx] ==pos_class_val])
+    pos_data_num = len([item for item in data if item[class_idx] == pos_class_val])
     neg_data_num = all_data_num - pos_data_num
-
+    
     is_pure = None
     if pos_data_num == 0:
         is_pure = PURE_NEG
@@ -53,11 +53,13 @@ def cal_entropy(data, class_idx, pos_class_val, check_pure=False):
         is_pure = PURE_POS
     else:
         is_pure = 1 if pos_data_num >= neg_data_num else 0
+
+    ce_org = 0
+    if pos_data_num:
+        ce_org += - pos_data_num / all_data_num * np.log(pos_data_num / all_data_num)
+    if neg_data_num:
+        ce_org += - neg_data_num / all_data_num * np.log(neg_data_num / all_data_num)
     
-    # print('\tpos_data_num:', pos_data_num, 'neg_data_num:', neg_data_num, 'all_data_num:', all_data_num)
-    pos_data_num += 1e-15
-    neg_data_num += 1e-15
-    ce_org =  - pos_data_num / all_data_num * np.log(pos_data_num / all_data_num) - neg_data_num / all_data_num * np.log(neg_data_num / all_data_num)
     if check_pure:
         return ce_org, is_pure
     else:
@@ -76,8 +78,8 @@ def cal_max_gain(data, used_attrs, attr2value, heads, class_name='Class'):
     elif is_pure == PURE_POS:
         return {'label': neg_class_val}
     else:
-        all_attrs = set(attr2value.keys()) - set(used_attrs)
-        # print('all_attrs num:', len(all_attrs), all_attrs)
+        all_attrs = set(heads) - set(used_attrs)
+        # all_attrs = [head for head in heads if head not in used_attrs]
         if len(all_attrs) == 0:
             return {'label': pos_class_val} if is_pure == 1 else {'label': neg_class_val}
         else:
@@ -88,19 +90,22 @@ def cal_max_gain(data, used_attrs, attr2value, heads, class_name='Class'):
             for attr in all_attrs:
                 attr_vals = attr2value[attr]
                 attr_idx = heads.index(attr)
+
                 split_data_lst = {val: [] for val in attr_vals}
                 for item in data:
                     split_data_lst[item[attr_idx]].append(item)
+                
                 attr_ce = 0
                 for val in attr_vals:
                     if len(split_data_lst[val]) != 0:
-                        attr_ce += len(split_data_lst[val])/data_num * cal_entropy(split_data_lst[val], attr_idx, pos_class_val)
+                        attr_ce += len(split_data_lst[val]) / data_num * cal_entropy(split_data_lst[val], class_idx, pos_class_val)
+
                 attr_gain = org_ce - attr_ce
-                # print('  - ',attr, ':', attr_gain)
                 if attr_gain > max_gain:
                     max_gain = attr_gain
                     best_attr = attr
                     best_data_lst = split_data_lst
+            
             if best_attr == None:
                 return {'label': pos_class_val} if is_pure == 1 else {'label': neg_class_val}
             else:
@@ -139,10 +144,10 @@ def print_rule(rule, tap_num=0):
 
 if __name__ == '__main__':
     DATA_DIR = './data'
-    DATA_FILE = 'pneumonia'
+    DATA_FILE = 'play_tennis'
     filename = os.path.join(DATA_DIR, DATA_FILE)
-    data = read_data(filename)
-    decision_tree = ID3(data, class_name='Class')
+    data = read_data(filename, no_use_heads=['Day'])
+    decision_tree = ID3(data, class_name='PlayTennis')
     print('decision tree: ', decision_tree)
     print_rule(decision_tree)
 
