@@ -13,5 +13,6 @@ All algrithm implemented by us using some basic package, like `numpy`, `sympy` a
 | 3  | GS      | 2019.12.22 | - |
 | 4  | AQ      | 2019.12.22 | - |
 | 5  | Find-S      | 2019.12.25 | - |
-| 5  | CE      | 2019.12.25 | - |
+| 6  | CE      | 2019.12.25 | - |
+| 7  | ID3      | 2019.12.28 | - |
 
