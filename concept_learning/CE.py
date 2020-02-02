@@ -226,19 +226,35 @@ def candidate_elimination(data, class_name='Class'):
     tags = [1] * len(pos_examples) + [0] * len(neg_examples)
     all_examples = pos_examples + neg_examples
 
+
+    print('--- step: {} ---'.format(0))
+    print_set(G_Set, S_Set)
+
+    step = 1
     for emp, tag in zip(all_examples, tags):
         if tag:  # positive
             G_Set, S_Set = remove_diff_hypothesis_by_pos(G_Set, S_Set, emp)
         else:  # negative
             G_Set, S_Set = remove_diff_hypothesis_by_neg(G_Set, S_Set, emp, heads, attr2value)
+        print('--- step: {} ---'.format(step))
+        print_set(G_Set, S_Set)
+        step += 1
 
     return G_Set, S_Set
 
 
 def print_rule(heads, rule):
-    rule_str = '<' + ', '.join([head + '=' + attr for head, attr in zip(heads, rule)]) + '>'
+    rule_str = '<' + ', '.join([head + '=' + (attr if attr != 'None' else 'Ø') for head, attr in zip(heads, rule)]) + '>'
     return rule_str
 
+
+def print_set(G_Set, S_Set):
+    print('\t--- special boundary ---')
+    for idx, hps in enumerate(S_Set):
+        print('\tspecial {}: '.format(idx), print_rule(data['heads'], hps))
+    print('\t--- general boundary ---')
+    for idx, hps in enumerate(G_Set):
+        print('\tgeneral {}: '.format(idx), print_rule(data['heads'], hps))
 
 if __name__ == '__main__':
     DATA_DIR = './data'
@@ -246,10 +262,6 @@ if __name__ == '__main__':
     filename = os.path.join(DATA_DIR, DATA_FILE)
     data = read_data(filename)
     G_Set, S_Set = candidate_elimination(data, class_name='EnjoySport')
-    print('--- special boundary ---')
-    for idx, hps in enumerate(S_Set):
-        print('special {}: '.format(idx), print_rule(data['heads'], hps))
-    print('--- general boundary ---')
-    for hps in G_Set:
-        print('general {}: '.format(idx), print_rule(data['heads'], hps))
+    print('--- final ---')
+    print_set(G_Set, S_Set)
 

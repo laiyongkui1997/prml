@@ -13,6 +13,7 @@ As usual, a `Decision Tree` represents the conjunction and disjunction of the at
 ## Algorithms
 
 - ID3
+    - Inductive Bias: The shorter tree is more priority, and the tree whose attribute has higher information gain is more priority
 - ASSISTANT
 - C4.5
 
